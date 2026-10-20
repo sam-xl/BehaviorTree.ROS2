@@ -102,7 +102,7 @@ TreeExecutionServer::TreeExecutionServer(const rclcpp::Node::SharedPtr& node)
         response->tree_ids = p_->factory.registeredBehaviorTrees();
       });
 
-  p_->reload_trees_service = node_->create_service<GetTrees>(
+  p_->reload_trees_service = node_->create_service<std_srvs::srv::Trigger>(
       "reload_trees", [this](const std::shared_ptr<std_srvs::srv::Trigger::Request> _,
                              std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
         if(!p_->factory_initialized_)
@@ -112,8 +112,9 @@ TreeExecutionServer::TreeExecutionServer(const rclcpp::Node::SharedPtr& node)
           return;
         }
         // load trees (XML) from multiple directories
-        RegisterBehaviorTrees(p_->params, p_->factory, node_);
-        response->success = true;
+        const auto result = RegisterBehaviorTrees(p_->params, p_->factory, node_);
+        response->success = result.has_value();
+        response->message = result.error_or("");
       });
 
   p_->single_shot_timer =

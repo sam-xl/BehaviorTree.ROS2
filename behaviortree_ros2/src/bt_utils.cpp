@@ -76,10 +76,11 @@ std::string GetDirectoryPath(const std::string& parameter_value)
   return "";
 }
 
-void LoadBehaviorTrees(BT::BehaviorTreeFactory& factory,
-                       const std::string& directory_path)
+BT::Result LoadBehaviorTrees(BT::BehaviorTreeFactory& factory,
+                             const std::string& directory_path)
 {
   using std::filesystem::directory_iterator;
+  BT::Result result;
   for(const auto& entry : directory_iterator(directory_path))
   {
     if(entry.path().extension() == ".xml")
@@ -93,9 +94,14 @@ void LoadBehaviorTrees(BT::BehaviorTreeFactory& factory,
       {
         RCLCPP_ERROR(kLogger, "Failed to load BehaviorTree: %s \n %s",
                      entry.path().filename().c_str(), e.what());
+        std::stringstream ss;
+        ss << "Failed to load BehaviorTree (" << entry.path().filename()
+           << "): " << e.what() << ".\n";
+        result = nonstd::make_unexpected(result.error_or("") + ss.str());
       }
     }
   }
+  return result;
 }
 
 void LoadPlugin(BT::BehaviorTreeFactory& factory, const std::filesystem::path& file_path,
@@ -159,17 +165,26 @@ void RegisterPlugins(bt_server::Params& params, BT::BehaviorTreeFactory& factory
   }
 }
 
-void RegisterBehaviorTrees(bt_server::Params& params, BT::BehaviorTreeFactory& factory,
-                           rclcpp::Node::SharedPtr node)
+BT::Result RegisterBehaviorTrees(bt_server::Params& params,
+                                 BT::BehaviorTreeFactory& factory,
+                                 rclcpp::Node::SharedPtr node)
 {
+  BT::Result result;
   for(const auto& tree_dir : params.behavior_trees)
   {
     const auto tree_directory = GetDirectoryPath(tree_dir);
     // skip invalid subtree directories
     if(tree_directory.empty())
       continue;
-    LoadBehaviorTrees(factory, tree_directory);
+    const auto individual_result = LoadBehaviorTrees(factory, tree_directory);
+    if(!individual_result)
+    {
+      result = nonstd::make_unexpected(result.error_or("Error(s) while loading "
+                                                       "trees:\n") +
+                                       individual_result.error());
+    }
   }
+  return result;
 }
 
 }  // namespace BT
