@@ -11,6 +11,7 @@ set(THIS_PACKAGE_DEPS
     behaviortree_cpp
     btcpp_ros2_interfaces
     generate_parameter_library
+    std_srvs
     )
 
 find_package(ament_cmake REQUIRED)
@@ -40,6 +41,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     ament_index_cpp::ament_index_cpp
     behaviortree_cpp::behaviortree_cpp
     ${btcpp_ros2_interfaces_TARGETS}
+    ${std_srvs_TARGETS}
     bt_executor_parameters
 )
 
