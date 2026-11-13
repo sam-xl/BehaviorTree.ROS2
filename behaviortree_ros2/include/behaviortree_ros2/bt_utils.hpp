@@ -52,9 +52,10 @@ std::string GetDirectoryPath(const std::string& parameter_value);
  *
  * @param factory BehaviorTreeFactory to register the BehaviorTrees into
  * @param directory_path Full path to the directory to search for BehaviorTree definitions
+ * @return A result indicating whether any of the loads failed.
  */
-void LoadBehaviorTrees(BT::BehaviorTreeFactory& factory,
-                       const std::string& directory_path);
+BT::Result LoadBehaviorTrees(BT::BehaviorTreeFactory& factory,
+                             const std::string& directory_path);
 
 /**
  * @brief Function to load a BehaviorTree ROS plugin (or standard BT.CPP plugins)
@@ -82,8 +83,10 @@ void RegisterPlugins(bt_server::Params& params, BT::BehaviorTreeFactory& factory
  * plugins, ros_plugins and BehaviorTrees from
  * @param factory BehaviorTreeFactory to register into
  * @param node node pointer that is shared with the ROS based Behavior plugins
+ * @return A result indicating whether any of the loads failed
  */
-void RegisterBehaviorTrees(bt_server::Params& params, BT::BehaviorTreeFactory& factory,
-                           rclcpp::Node::SharedPtr node);
+BT::Result RegisterBehaviorTrees(bt_server::Params& params,
+                                 BT::BehaviorTreeFactory& factory,
+                                 rclcpp::Node::SharedPtr node);
 
 }  // namespace BT

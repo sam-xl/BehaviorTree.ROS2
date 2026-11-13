@@ -28,6 +28,7 @@
 #include "behaviortree_cpp/loggers/groot2_publisher.h"
 
 #include "btcpp_ros2_interfaces/srv/get_trees.hpp"
+#include "std_srvs/srv/trigger.hpp"
 
 namespace
 {
@@ -48,6 +49,7 @@ struct TreeExecutionServer::Pimpl
   bt_server::Params params;
 
   rclcpp::Service<GetTrees>::SharedPtr get_trees_service;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr reload_trees_service;
 
   BT::BehaviorTreeFactory factory;
   std::shared_ptr<BT::Groot2Publisher> groot_publisher;
@@ -98,6 +100,21 @@ TreeExecutionServer::TreeExecutionServer(const rclcpp::Node::SharedPtr& node)
       "get_loaded_trees", [this](const std::shared_ptr<GetTrees::Request> _,
                                  std::shared_ptr<GetTrees::Response> response) {
         response->tree_ids = p_->factory.registeredBehaviorTrees();
+      });
+
+  p_->reload_trees_service = node_->create_service<std_srvs::srv::Trigger>(
+      "reload_trees", [this](const std::shared_ptr<std_srvs::srv::Trigger::Request> _,
+                             std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+        if(!p_->factory_initialized_)
+        {
+          response->success = false;
+          response->message = "Factories have not been initialized yet.";
+          return;
+        }
+        // load trees (XML) from multiple directories
+        const auto result = RegisterBehaviorTrees(p_->params, p_->factory, node_);
+        response->success = result.has_value();
+        response->message = result.error_or("");
       });
 
   p_->single_shot_timer =
